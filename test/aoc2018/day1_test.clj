@@ -1,6 +1,6 @@
-(ns day1.core-test
+(ns aoc2018.day1-test
   (:require [clojure.test :refer :all]
-            [day1.core :refer :all]))
+            [aoc2018.day1 :refer :all]))
 
 (deftest day1-part1
   (testing "Day 1 Part 1"

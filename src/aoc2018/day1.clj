@@ -1,4 +1,4 @@
-(ns day1.core
+(ns aoc2018.day1
   (:require [clojure.java.io :as io]))
 
 (defn parse-int [s] (Integer/parseInt s))
