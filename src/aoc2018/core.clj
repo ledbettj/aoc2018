@@ -13,3 +13,8 @@
     ;; must use doall to force invocation; `map` is lazy and if we dont
     ;; force invocation it will be evaluated later, after the reader is closed.
     (doall (line-seq rdr))))
+
+(defn in?
+  "true if coll contains elm"
+  [coll elm]
+  (some #(= elm %) coll))
