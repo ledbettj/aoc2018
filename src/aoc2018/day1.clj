@@ -1,17 +1,8 @@
 (ns aoc2018.day1
-  (:require [clojure.java.io :as io]))
+  (:require [aoc2018.core :refer :all]))
 
-(defn parse-int
-  "Apparently java functions can't be (easily) used as closures, so wrap it"
-  [s] (Integer/parseInt s))
-
-(defn load-input
-  "Read the given input file and parse each line into an integer"
-  [file-name]
-  (with-open [rdr (io/reader file-name)]
-    ;; must use doall to force invocation; `map` is lazy and if we dont
-    ;; force invocation it will be evaluated later, after the reader is closed.
-    (doall (map parse-int (line-seq rdr)))))
+(defn day1-input []
+  (map parse-int (load-input 1)))
 
 (defn run1
   "Solve Day 1 Part 1 for the given inputs, assuming a starting value of initial-value"
