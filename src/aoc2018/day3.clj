@@ -31,19 +31,39 @@
                           (update smap [x y] inc)
                           (conj smap { [x y] 1 })
                           )) state yrange)
-                      ) state xrange)))
+              ) state xrange)))
 
 (defn build-overlap-set
   [claims]
-  ((reduce update-claims {} claims)))
-
+  (reduce update-claims {} claims))
 
 (defn count-overlaping-points
   [claim-map]
   (count (filter (fn [value] (> value 1)) (vals claim-map))))
 
+(defn no-overlaps?
+  [claim claim-map]
+  (let [xstart (:x (:position (:rect claim)))
+        xend   (+ xstart (:width (:rect claim)))
+        ystart (:y (:position (:rect claim)))
+        yend   (+ ystart (:height (:rect claim)))
+        xrange (range xstart xend)
+        yrange (range ystart yend)]
+    (reduce (fn [state x]
+              (reduce (fn [state y]
+                        (and state (= (claim-map [x y]) 1))
+                        ) state yrange))
+            true xrange)))
+
+(defn find-non-overlapping-claims
+  [claims claim-map]
+  (first (filter (fn [claim]
+                   (no-overlaps? claim claim-map))
+                 claims )))
 
 ;; answer to part 1
 ;; (count-overlaping-points (build-overlap-set (day3-input)))
 
-;; (> 12 1)
+;; answer to part 2
+;; (:id (find-non-overlapping-claims (day3-input) (build-overlap-set (day3-input))))
+
