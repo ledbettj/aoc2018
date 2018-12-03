@@ -29,12 +29,6 @@
             { 2 0 3 0 }
             input))
 
-(defn find-single-letter-diffs
-  [input]
-  (map-indexed (fn [index str]
-                 [str (single-letter-diffs-for str (drop index input)) ])
-               input))
-
 (defn single-letter-diff?
   [s1 s2]
   (and (= (count s1) (count s2))
@@ -52,6 +46,11 @@
   [str candidates]
   (filter (fn [candidate] (single-letter-diff? str candidate)) candidates))
 
+(defn find-single-letter-diffs
+  [input]
+  (map-indexed (fn [index str]
+                 [str (single-letter-diffs-for str (drop index input)) ])
+               input))
 
 (defn solve-day2
   [input]
