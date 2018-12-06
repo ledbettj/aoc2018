@@ -107,3 +107,23 @@
 ;; most asleep is at m40
 ;; id is 2351
 ;; (* 2351 40)
+
+
+(defn solve-this-garbage-pt2
+  []
+  (let [results (vals (process-event-list (day4-input)))
+        sleepiest (last (sort-by (fn [entry]
+                                   (if (= (count (:sleep-map entry)) 0)
+                                     0
+                                   (reduce max (vals (:sleep-map entry)))))
+
+                                 results))
+        id (:id (first (:events sleepiest)))
+        ]
+    (:sleep-map sleepiest)
+    ))
+
+;; (solve-this-garbage-pt2)
+;; id is 1997
+;; most asleep at m20
+;; (* 20 1997)
