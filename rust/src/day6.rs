@@ -118,7 +118,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn day6_p1_test() {
         let mut g = Grid::new(DAY6_INPUT);
         g.fill_distance_grid();
         assert_eq!(g.largest_noninfinite_area_size(), 3010);
