@@ -101,16 +101,16 @@ mod tests {
     #[test]
     fn day10_p1() {
         let mut starfield = Star::load(INPUT);
-
+        let mut t = 0;
         loop {
             Star::tick_all(&mut starfield);
-
+            t += 1;
             if Star::is_interesting_field(&starfield) {
                 Star::dump(&mut starfield);
+                println!("t = {}", t);
                 std::thread::sleep_ms(1_000);
+                // gotta hit C-c here to bail
             }
         }
-
-        
     }
 }
