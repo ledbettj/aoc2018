@@ -62,39 +62,35 @@ impl Minetracks {
         Minetracks { grid: grid, carts: carts }
     }
 
-    pub fn crash(&self) -> Option<(isize, isize)> {
-        for i in 0..self.carts.len() {
-            for j in (i+1)..self.carts.len() {
-                if self.carts[i].position == self.carts[j].position {
-                    return Some(self.carts[i].position);
+    pub fn tick(&mut self) -> Option<(isize, isize)> {
+        self.carts.sort_by_key(|cart| cart.position);
+        let mut crash = None;
+
+        let new_carts = self.carts.iter().map(|c| {
+            let (mut x, mut y) = c.position;
+            let (mut dx, mut dy) = c.direction;
+            let tmp = dx;
+            let mut action : CartAction = c.action;
+
+            x += dx;
+            y += dy;
+
+            if let Some(col) = self.carts.iter().find(|c| c.position == (x, y)) {
+                if crash == None {
+                    crash = Some((x, y));
                 }
             }
-        };
-        None
-    }
 
-    pub fn tick(&mut self) -> Option<(isize, isize)> {
-        self.carts.sort_by_key(|cart| (cart.position.1, cart.position.0));
-        let mut seen : Vec<(isize, isize)> = vec![];
-
-        for c in self.carts.iter_mut() {
-            let (ref mut x, ref mut y) = &mut c.position;
-            let (ref mut dx, ref mut dy) = &mut c.direction;
-            let tmp = *dx;
-
-            // move cart
-            *x += *dx;
-            *y += *dy;
-            let ch = self.grid[*y as usize][*x as usize];
+            let ch = self.grid[y as usize][x as usize];
             match ch {
-                '\\' => { *dx = *dy; *dy = tmp; },
-                '/'  => { *dx = -*dy; *dy = -tmp; },
+                '\\' => { dx = dy; dy = tmp; },
+                '/'  => { dx = -dy; dy = -tmp; },
                 // need to take action based on CartAction
                 '+' => {
-                    c.action = match c.action {
+                    action = match c.action {
                         CartAction::Left => {
                             // swap ?
-                            *dx = *dy; *dy = tmp;
+                            dx = dy; dy = -tmp;
                             CartAction::Straight
                         },
                         CartAction::Straight => {
@@ -103,7 +99,7 @@ impl Minetracks {
                         },
                         CartAction::Right => {
                             // swap and invert
-                            *dx = -*dy; *dy = -tmp;
+                            dx = -dy; dy = tmp;
                             CartAction::Left
                         }
                     }
@@ -112,13 +108,14 @@ impl Minetracks {
                 '-' => { /* nop */ },
                 x   => panic!(format!("wtf you doin on '{}'", x))
             };
-            if seen.contains(&(*x, *y)) {
-                return Some((*x, *y));
-            }
-            seen.push((*x, *y));
-        };
+            let mut new_cart = Cart::new(x, y, dx, dy);
+            new_cart.action = action;
+            new_cart
+        }).collect();
 
-        None
+        self.carts = new_carts;
+
+        crash
     }
 }
 
@@ -131,7 +128,7 @@ mod tests {
         let mut m = Minetracks::load(INPUT);
         loop {
             if let Some(pos) = m.tick() {
-                assert_eq!(pos, (7, 3));
+                assert_eq!(pos, (7,3));
                 break;
             }
         }
