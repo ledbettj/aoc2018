@@ -50,10 +50,36 @@ mod tests {
                 break;
             }
         }
-        println!("{:?}", r.scores);
 
         let v = &r.scores[index..(index + 10)];
-        assert_eq!(v, [8, 6, 1, 0, 3, 2, 1, 4, 1, 4]
+        assert_eq!(v, [8, 6, 1, 0, 3, 2, 1, 4, 1, 4]);
     }
 
+    #[test]
+    fn day14_p2() {
+        let mut r = RecipeBoard::new();
+        let index = 607331;
+
+        loop {
+            r.next();
+            let len = r.scores.len();
+
+            if len >= 6 {
+                let v = &r.scores[(len - 6)..len];
+                if v == [6, 0, 7, 3, 3, 1] {
+                    println!("found answer at {}", len - 6);
+                    break;
+                }
+            }
+            if len >= 7 {
+                let v = &r.scores[(len - 7)..(len - 1)];
+                if v == [6, 0, 7, 3, 3, 1] {
+                    println!("found answer at {}", len - 7);
+                    break;
+                }
+            }
+
+        }
+
+    }
 }
