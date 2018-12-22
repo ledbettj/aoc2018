@@ -1,5 +1,4 @@
 
-
 use std::collections::HashMap;
 
 const DAY6_INPUT : &str = include_str!("../inputs/day6.txt");
@@ -39,6 +38,25 @@ impl Grid {
             points: list,
             grid: grid
         }
+    }
+
+    pub fn safest_area_size(&mut self) -> usize {
+        let mut counts = HashMap::new();
+        let mut total = 0;
+
+        for x in 0..self.grid.len() {
+            for y in 0..self.grid[x].len() {
+                let counter = counts.entry((x,y)).or_insert(0);
+                *counter = self.points
+                    .iter()
+                    .fold(0, |accum, &p| accum + manhattan(p, (x as isize, y as isize)));
+
+                if *counter < 10_000 {
+                    total += 1;
+                }
+            }
+        }
+        total
     }
 
     pub fn largest_noninfinite_area_size(&self) -> usize {
@@ -122,5 +140,14 @@ mod tests {
         let mut g = Grid::new(DAY6_INPUT);
         g.fill_distance_grid();
         assert_eq!(g.largest_noninfinite_area_size(), 3010);
+    }
+
+    #[test]
+    fn day6_p2() {
+        let mut g = Grid::new(DAY6_INPUT);
+        g.fill_distance_grid();
+
+        assert_eq!(g.safest_area_size(), 0);
+
     }
 }
