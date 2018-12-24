@@ -4,18 +4,21 @@ use regex::Regex;
 const INPUT : &str = include_str!("../inputs/day16.txt");
 
 #[derive(Debug)]
-struct Instruction {
+pub struct Instruction {
     opcode: usize,
     args:   Vec<usize>,
     before: Vec<usize>,
     after:  Vec<usize>
 }
 
-enum OpType {
+#[derive(PartialEq,Clone,Copy)]
+pub enum OpType {
     RegReg,
     ImdReg,
     RegImd
 }
+
+pub type OpFn = Fn(usize, usize) -> usize;
 
 pub fn add(a: usize, b: usize) -> usize {
     a + b
@@ -46,14 +49,64 @@ pub fn eq(a: usize, b: usize) -> usize {
 }
 
 
-// pub fn indentify_instructions(instr: &Vec<Instruction>) ->
-//     HashMap<usize, &Fn(usize, usize) -> usize>
-// {
-//     let mut m = HashMap::new();
+pub fn identify_instructions(instr: &Vec<Instruction>) ->
+    HashMap<usize, (OpType, &'static OpFn, &'static str)>
+{
+    let mut m = HashMap::new();
+    let mut items : Vec<(OpType, &'static OpFn, &'static str)> = vec![
+        (OpType::RegReg, &add, "add"),
+        (OpType::RegReg, &mul, "mul"),
+        (OpType::RegReg, &ban, "ban"),
+        (OpType::RegReg, &bor, "bor"),
+        (OpType::RegReg, &set, "set"),
+        (OpType::RegReg, &gt, "gt"),
+        (OpType::RegReg, &eq, "eq"),
+
+        (OpType::RegImd, &add, "add"),
+        (OpType::RegImd, &mul, "mul"),
+        (OpType::RegImd, &ban, "ban"),
+        (OpType::RegImd, &bor, "bor"),
+        (OpType::RegImd, &set, "set"),
+        (OpType::RegImd, &gt, "gt"),
+        (OpType::RegImd, &eq, "eq"),
+
+        (OpType::ImdReg, &gt, "gt"),
+        (OpType::ImdReg, &eq, "eq")
+    ];
 
 
-//     m
-// }
+    while !items.is_empty() {
+
+        for i in instr.iter() {
+            if m.contains_key(&i.opcode) {
+                continue;
+            }
+
+            let possible : Vec<(OpType, &'static OpFn, &'static str)> = items
+                .iter()
+                .filter(|&(t, f, _)| i.exec(*t, f) == i.after)
+                .map(|x| x.clone())
+                .collect();
+
+            if possible.len() == 0 {
+                println!("wtf no possible results for {}", i.opcode);
+                panic!("shit");
+            }
+
+            if possible.len() == 1 {
+                m.insert(i.opcode, possible[0]);
+                items.retain(|&(t, _, n)|{
+                        t != possible[0].0 || n != possible[0].2
+                    });
+                println!("identified {}, {} remaining", i.opcode, items.len());
+            }
+
+        }
+
+    }
+
+    m
+}
 
 impl Instruction {
     pub fn load(input: &str) -> Vec<Instruction> {
@@ -111,46 +164,35 @@ impl Instruction {
         after
     }
 
-
-    fn check_rr_bin_expr<F>(&self, func: F) -> bool
-    where F: Fn(usize, usize) -> usize {
-        self.exec(OpType::RegReg, func) == self.after
-    }
-
-    fn check_ri_bin_expr<F>(&self, func: F) -> bool
-    where F: Fn(usize, usize) -> usize {
-        self.exec(OpType::RegImd, func) == self.after
-    }
-
-    fn check_ir_bin_expr<F>(&self, func: F) -> bool
-    where F: Fn(usize, usize) -> usize {
-        self.exec(OpType::ImdReg, func) == self.after
-    }
-
-    pub fn possible_count(&self) -> usize {
-        let mut count = 0;
-
-        let funcs : Vec<&Fn(usize, usize) -> usize> = vec![
+    fn possible(&self) -> Vec<(OpType, &'static OpFn)> {
+        let funcs : Vec<&'static OpFn> = vec![
             &add, &mul, &ban, &bor, &set, &gt, &eq
         ];
 
-        let extra : Vec<&Fn(usize, usize) -> usize> = vec![
-            &gt, &eq
-        ];
+        let extra : Vec<&'static OpFn> = vec![&gt, &eq];
 
-        let mut matches = funcs
-            .iter()
-            .filter(|f| self.check_rr_bin_expr(f))
-            .count();
+        let mut results = vec![];
 
-        matches += funcs
-            .iter()
-            .filter(|f| self.check_ri_bin_expr(f))
-            .count();
+        for f in funcs {
+            if self.exec(OpType::RegReg, f) == self.after {
+                results.push((OpType::RegReg, f));
+            }
+            if self.exec(OpType::RegImd, f) == self.after {
+                results.push((OpType::RegImd, f));
+            }
+        }
 
-        matches += extra.iter().filter(|f| self.check_ir_bin_expr(f)).count();
+        for f in extra {
+            if self.exec(OpType::ImdReg, f) == self.after {
+                results.push((OpType::ImdReg, f));
+            }
+        }
 
-        matches
+        results
+    }
+
+    pub fn possible_count(&self) -> usize {
+        self.possible().len()
     }
 
 
@@ -172,5 +214,12 @@ mod tests {
             .count();
 
         assert_eq!(c, 567);
+    }
+
+    #[test]
+    fn day16_p2() {
+        let instrs = Instruction::load(INPUT);
+        let m = identify_instructions(&instrs);
+
     }
 }
