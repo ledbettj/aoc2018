@@ -1,4 +1,4 @@
-
+use std::collections::HashMap;
 use regex::Regex;
 
 const INPUT : &str = include_str!("../inputs/day16.txt");
@@ -11,6 +11,11 @@ struct Instruction {
     after:  Vec<usize>
 }
 
+enum OpType {
+    RegReg,
+    ImdReg,
+    RegImd
+}
 
 pub fn add(a: usize, b: usize) -> usize {
     a + b
@@ -40,6 +45,15 @@ pub fn eq(a: usize, b: usize) -> usize {
     if a == b { 1 } else { 0 }
 }
 
+
+// pub fn indentify_instructions(instr: &Vec<Instruction>) ->
+//     HashMap<usize, &Fn(usize, usize) -> usize>
+// {
+//     let mut m = HashMap::new();
+
+
+//     m
+// }
 
 impl Instruction {
     pub fn load(input: &str) -> Vec<Instruction> {
@@ -81,34 +95,36 @@ impl Instruction {
         }
     }
 
-    fn check_rr_bin_expr<F>(&self, func: F) -> bool
+    pub fn exec<F>(&self, mode: OpType, func: F) -> Vec<usize>
     where F: Fn(usize, usize) -> usize {
         let (a, b, c) = self.unpack_args();
 
-        let mut after = self.after.clone();
-        after[c] = func(self.before[a], self.before[b]);
+        let (r1, r2) = match mode {
+            OpType::RegReg => (self.before[a], self.before[b]),
+            OpType::RegImd => (self.before[a], b),
+            OpType::ImdReg => (a, self.before[b])
+        };
 
-        after == self.after
+        let mut after = self.after.clone();
+        after[c] = func(r1, r2);
+
+        after
+    }
+
+
+    fn check_rr_bin_expr<F>(&self, func: F) -> bool
+    where F: Fn(usize, usize) -> usize {
+        self.exec(OpType::RegReg, func) == self.after
     }
 
     fn check_ri_bin_expr<F>(&self, func: F) -> bool
     where F: Fn(usize, usize) -> usize {
-        let (a, b, c) = self.unpack_args();
-
-        let mut after = self.after.clone();
-        after[c] = func(self.before[a], b);
-
-        after == self.after
+        self.exec(OpType::RegImd, func) == self.after
     }
 
     fn check_ir_bin_expr<F>(&self, func: F) -> bool
     where F: Fn(usize, usize) -> usize {
-        let (a, b, c) = self.unpack_args();
-
-        let mut after = self.after.clone();
-        after[c] = func(a, self.before[b]);
-
-        after == self.after
+        self.exec(OpType::ImdReg, func) == self.after
     }
 
     pub fn possible_count(&self) -> usize {
