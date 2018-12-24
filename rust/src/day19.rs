@@ -7,7 +7,8 @@ const SAMPLE : &str = include_str!("../inputs/day19.sample.txt");
 pub enum OpType {
     RR,
     RI,
-    IR
+    IR,
+    II // used for SETI where we shouldn't look at second arg
 }
 
 #[derive(Debug,PartialEq,Eq,Hash)]
@@ -25,7 +26,6 @@ pub type OpFn = Fn(usize, usize) -> usize;
 
 pub struct Machine {
     registers: [usize; 6],
-    ip: usize,
     ip_index: usize,
     table: HashMap<OpCode, Box<OpFn>>
 }
@@ -63,31 +63,25 @@ impl Instr {
     }
 
     fn parse_instr(instr: &str) -> (OpCode, OpType) {
-        let t = if instr.ends_with("ir") {
-            OpType::IR
-        } else if instr.ends_with("ri") {
-            OpType::RI
-        } else if instr.ends_with("i") {
-            OpType::IR
-        } else if instr.ends_with("r") {
-            OpType::RR
-        } else {
-            panic!("Bad instruction suffix: {}", instr);
-        };
-
-        let code = match instr {
-            "addi" | "addr" => OpCode::Add,
-            "muli" | "mulr" => OpCode::Mul,
-            "bani" | "banr" => OpCode::And,
-            "bori" | "borr" => OpCode::Or,
-            "seti" | "setr" => OpCode::Set,
-            "gtrr" | "gtri" | "gtir" => OpCode::Gt,
-            "eqrr" | "eqir" | "eqri" => OpCode::Eq,
+        match instr {
+            "addi" => (OpCode::Add, OpType::RI),
+            "addr" => (OpCode::Add, OpType::RR),
+            "muli" => (OpCode::Mul, OpType::RI),
+            "mulr" => (OpCode::Mul, OpType::RR),
+            "bani" => (OpCode::And, OpType::RI),
+            "banr" => (OpCode::And, OpType::RR),
+            "bori" => (OpCode::Or,  OpType::RI),
+            "borr" => (OpCode::Or,  OpType::RR),
+            "seti" => (OpCode::Set, OpType::II),
+            "setr" => (OpCode::Set, OpType::RR),
+            "gtrr" => (OpCode::Gt,  OpType::RR),
+            "gtri" => (OpCode::Gt,  OpType::RI),
+            "gtir" => (OpCode::Gt,  OpType::IR),
+            "eqrr" => (OpCode::Eq,  OpType::RR),
+            "eqri" => (OpCode::Eq,  OpType::RI),
+            "eqir" => (OpCode::Eq,  OpType::IR),
             _ => panic!("Bad input instruction")
-        };
-
-
-        (code, t)
+        }
     }
 }
 
@@ -95,33 +89,37 @@ impl Machine {
     pub fn new(ip_index: usize) -> Machine {
         Machine {
             registers: [0; 6],
-            ip: 0,
             ip_index: ip_index,
             table: Machine::build_table()
         }
     }
 
     pub fn exec(&mut self, program: &Vec<Instr>) {
-        self.ip = self.registers[self.ip_index];
+        let mut ip = self.registers[self.ip_index];
 
         loop {
-
-            if self.ip >= program.len() {
-                break;
-            }
-
-            let instr = &program[self.ip];
+            let instr = &program[ip];
             let func = &self.table[&instr.code];
+
+            // print!("ip={} {:?} {:?}", ip, self.registers, instr);
 
             let (a, b) = match instr.optype {
                 OpType::RR => (self.registers[instr.args[0]], self.registers[instr.args[1]]),
                 OpType::IR => (instr.args[0], self.registers[instr.args[1]]),
-                OpType::RI => (self.registers[instr.args[0]], instr.args[1])
+                OpType::RI => (self.registers[instr.args[0]], instr.args[1]),
+                OpType::II => (instr.args[0], instr.args[1])
             };
 
             self.registers[instr.args[2]] = func(a, b);
-            self.ip = self.registers[self.ip_index] + 1;
-            self.registers[self.ip_index] = self.ip;
+            // println!("{:?}", self.registers);
+            ip = self.registers[self.ip_index] + 1;
+
+            if ip >= program.len() {
+                break;
+            }
+
+            self.registers[self.ip_index] = ip;
+
         }
     }
 
@@ -145,12 +143,12 @@ mod tests {
 
     #[test]
     fn day19_p1() {
-        let prgm = Instr::load(SAMPLE);
-        let mut m = Machine::new(0);
+        let prgm = Instr::load(INPUT);
+        let mut m = Machine::new(1);
 
         m.exec(&prgm);
 
-        assert_eq!(m.registers[0], 0);
+        assert_eq!(m.registers[0], 2160);
     }
 
 }
